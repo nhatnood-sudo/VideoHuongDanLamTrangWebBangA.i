@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NhatVo Search</title>
+    <style>
+        /* === CÀI ĐẶT CƠ BẢN === */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #202124;
+        }
+
+        /* === TRANG CHỦ (TÌM KIẾM) === */
+        #home-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15vh;
+            min-height: 85vh;
+        }
+
+        /* Logo NhatVo giống màu Google */
+        .logo {
+            font-size: 80px;
+            font-weight: bold;
+            letter-spacing: -3px;
+            margin-bottom: 30px;
+            user-select: none;
+        }
+        .logo .blue1 { color: #4285F4; }
+        .logo .red1 { color: #EA4335; }
+        .logo .yellow { color: #FBBC05; }
+        .logo .blue2 { color: #4285F4; }
+        .logo .green { color: #34A853; }
+        .logo .red2 { color: #EA4335; }
+
+        /* Thanh tìm kiếm */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 580px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            outline: none;
+            box-sizing: border-box;
+            box-shadow: none;
+            transition: box-shadow 0.2s;
+        }
+        .search-box:hover, .search-box:focus {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+            border-color: rgba(223,225,229,0);
+        }
+
+        /* Hộp Gợi ý */
+        .suggestions-box {
+            position: absolute;
+            top: 48px;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 4px 6px rgba(32,33,36,0.28);
+            display: none;
+            overflow: hidden;
+            z-index: 10;
+            padding: 10px 0;
+        }
+        .suggestion-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f3f4;
+        }
+
+        /* === TRANG NỘI DUNG MỤC === */
+        #page-view {
+            display: none;
+            padding: 20px;
+        }
+        .back-header {
+            border-bottom: 1px solid #ebebeb;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            color: #1a73e8;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .back-btn:hover { background-color: #f1f3f4; }
+        
+        /* Căn lề chính giữa cho nội dung */
+        .content-container {
+            max-width: 800px; /* Độ rộng tối đa của nội dung */
+            margin: 0 auto;   /* Căn giữa trang */
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        /* === HIỆU ỨNG HÌNH ẢNH (ẢNH NHỎ TRÊN TRANG) === */
+        .content-image {
+            max-width: 100%;
+            border-radius: 12px; /* Bo góc nhẹ */
+            cursor: zoom-in;
+            transition: transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+            display: block;
+            margin: 20px auto; /* Căn giữa ảnh */
+        }
+        .content-image:hover {
+            transform: translateY(-5px) scale(1.02); /* Nổi lên nhẹ */
+            filter: brightness(1.15); /* Sáng lên */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        /* === LIGHTBOX (KHI BẤM VÀO ẢNH XEM TO) === */
+        .lightbox {
+            display: none; /* Ẩn mặc định */
+            position: fixed;
+            z-index: 9999;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); /* Nền đen mờ */
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 0; /* KHÔNG bo góc khi xem to */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            animation: zoomIn 0.3s ease;
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-btn:hover { color: #ccc; }
+
+        /* Vùng chứa Database ẩn đi */
+        #database { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="home-view">
+        <div class="logo">
+            <span class="blue1">N</span><span class="red1">h</span><span class="yellow">a</span><span class="blue2">t</span><span class="green">V</span><span class="red2">o</span>
+        </div>
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-box" placeholder="Tìm kiếm trên NhatVo..." autocomplete="off">
+            <div id="suggestions" class="suggestions-box"></div>
+        </div>
+    </div>
+
+    <div id="page-view">
+        <div class="back-header">
+            <button class="back-btn" onclick="goHome()">&#8592; Về trang tìm kiếm NhatVo</button>
+        </div>
+        <div id="render-content" class="content-container"></div>
+    </div>
+
+    <div id="lightbox" class="lightbox">
+        <span class="close-btn" onclick="closeLightbox()">&times;</span>
+        <img id="lightbox-img" class="lightbox-content" src="">
+    </div>
+
+    <div id="database">
+
+        <div class="page-data" data-title="Tiểu sử NhatVo" data-keywords="tiểu sử nhatvo, thông tin, giới thiệu bản thân">
+            <h1>Tiểu sử của NhatVo</h1>
+            <p>Chào mừng bạn đến với trang giới thiệu của NhatVo. Đây là đoạn văn bản mẫu được căn chính giữa trang để bạn dễ đọc.</p>
+            <p>Dưới đây là một bức ảnh. Hãy thử rê chuột qua ảnh để thấy hiệu ứng nổi lên và sáng lên, sau đó bấm vào ảnh để phóng to nhé!</p>
+            <img class="content-image" src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Ảnh làm việc">
+            <p>Bạn có thể viết thêm bao nhiêu chữ ở đây tùy thích.</p>
+        </div>
+
+        <div class="page-data" data-title="Dự án lập trình" data-keywords="dự án, code, lập trình web, công việc">
+            <h1>Các dự án lập trình của tôi</h1>
+            <p>Dưới đây là một số dự án web tôi đã làm. Giao diện này chính là một ví dụ!</p>
+            <img class="content-image" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Mã nguồn">
+        </div>
+
+       ư
+
+
+<div class="page-data" data-title="Video làm web bằng A.i" data-keywords="tiểu sử nhatvo, thông tin, giới thiệu bản thân">
+            <h1>Các bước để làm một trang web bằng A.i</h1>
+             <h3> CÁC BƯỚC</h3>
+            <p>B1................................</p>
+            <p>B2................................</p>
+            <img class="content-image" src="hinhrobot.jpg" style="width:100%">
+        </div>
+
+
+// muốn tạo thêm trang
+
+<div class="page-data" data-title="Tiêu đề trên thanh tìm kiếm" data-keywords="những thứ liên quan khi ghi vào sẽ ra mục này">
+//Nội dung---->
+            <h1>Tiêu đề nội dung</h1>
+             <h3> CÁC BƯỚC</h3>
+            <p>B1................................</p>
+            <p>B2................................</p>
+            <img class="content-image" src="hinhrobot.jpg" style="width:100%">
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script>
+        // Lấy các phần tử DOM
+        const searchInput = document.getElementById('search-input');
+        const suggestionsBox = document.getElementById('suggestions');
+        const homeView = document.getElementById('home-view');
+        const pageView = document.getElementById('page-view');
+        const renderContent = document.getElementById('render-content');
+        
+        // Lấy tất cả các trang từ "database"
+        const pages = document.querySelectorAll('.page-data');
+        const pageList = [];
+        
+        // Tạo chỉ mục tìm kiếm từ HTML
+        pages.forEach((page, index) => {
+            pageList.push({
+                id: index,
+                title: page.getAttribute('data-title'),
+                keywords: page.getAttribute('data-keywords').toLowerCase(),
+                html: page.innerHTML
+            });
+        });
+
+        // Xử lý khi gõ tìm kiếm
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            suggestionsBox.innerHTML = ''; // Xóa gợi ý cũ
+            
+            if (query === '') {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            // Tìm kiếm kết quả khớp
+            const results = pageList.filter(page => 
+                page.title.toLowerCase().includes(query) || 
+                page.keywords.includes(query)
+            );
+
+            if (results.length > 0) {
+                suggestionsBox.style.display = 'block';
+                results.forEach(result => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `🔍 ${result.title}`;
+                    
+                    // Xử lý khi click vào gợi ý -> Chuyển trang
+                    div.onclick = function() {
+                        openPage(result);
+                    };
+                    suggestionsBox.appendChild(div);
+                });
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+        // Hàm mở trang nội dung
+        function openPage(pageObj) {
+            homeView.style.display = 'none';
+            pageView.style.display = 'block';
+            renderContent.innerHTML = pageObj.html;
+            
+            // Xóa nội dung tìm kiếm
+            searchInput.value = '';
+            suggestionsBox.style.display = 'none';
+        }
+
+        // Hàm quay về trang chủ
+        function goHome() {
+            pageView.style.display = 'none';
+            homeView.style.display = 'flex';
+        }
+
+        // ==========================================
+        // XỬ LÝ LIGHTBOX (Phóng to ảnh)
+        // ==========================================
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+
+        // Lắng nghe sự kiện click trên toàn bộ vùng render content để bắt ảnh
+        renderContent.addEventListener('click', function(e) {
+            // Nếu phần tử được click có class "content-image"
+            if (e.target && e.target.classList.contains('content-image')) {
+                lightbox.style.display = 'flex';
+                lightboxImg.src = e.target.src; // Lấy link ảnh gán vào lightbox
+            }
+        });
+
+        // Hàm đóng lightbox (Bấm dấu X hoặc bấm ra ngoài nền)
+        function closeLightbox() {
+            lightbox.style.display = 'none';
+            lightboxImg.src = ''; // Xóa src để tránh nháy ảnh lần sau
+        }
+
+        // Đóng khi bấm ra nền đen của lightbox
+        lightbox.addEventListener('click', function(e) {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+    </script>
+</body>
+</html>
